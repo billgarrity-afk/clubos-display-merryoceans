@@ -585,9 +585,8 @@ body {
 ══════════════════════════════════════ */
 .footer {
   background:var(--ocean);
-  display:flex; align-items:center;
-  justify-content:space-between;
-  padding:0 52px;
+  display:grid;
+  grid-template-rows: 3px 1fr;
   border-top:1px solid rgba(255,255,255,0.06);
   position:relative;
 }
@@ -596,6 +595,40 @@ body {
   position:absolute; top:0; left:0; right:0; height:1px;
   background:linear-gradient(90deg, transparent, var(--teal), transparent);
   opacity:0.4;
+}
+.footer-leaderboard {
+  background:rgba(212,168,67,0.06);
+  border-bottom:1px solid rgba(212,168,67,0.12);
+  display:flex; align-items:center; gap:0;
+  padding:0 52px; height:22px; overflow:hidden;
+}
+.lb-strip-label {
+  font-size:9px; letter-spacing:2.5px; text-transform:uppercase;
+  color:rgba(212,168,67,0.5); margin-right:16px; flex-shrink:0;
+  font-weight:600;
+}
+.lb-strip-entries {
+  display:flex; gap:28px; align-items:center; flex:1;
+  overflow:hidden;
+}
+.lb-strip-entry {
+  display:flex; align-items:center; gap:6px;
+  font-size:11px; white-space:nowrap;
+}
+.lb-strip-rank { color:var(--gold); font-weight:700; font-size:10px; }
+.lb-strip-name { color:rgba(255,255,255,0.75); font-weight:500; }
+.lb-strip-pts { color:var(--teal); font-family:'DM Mono',monospace; font-size:10px; }
+.lb-strip-empty { font-size:11px; color:rgba(255,255,255,0.25); font-style:italic; }
+.lb-strip-new {
+  font-size:9px; font-weight:800; letter-spacing:1px; text-transform:uppercase;
+  background:var(--gold); color:var(--ocean); padding:1px 6px; border-radius:3px;
+  animation:lbFlash 1s ease-in-out 3;
+}
+@keyframes lbFlash {{ 0%,100% {{ opacity:1; }} 50% {{ opacity:0.4; }} }}
+
+.footer-main {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 52px;
 }
 .footer-sponsor {
   display:flex; flex-direction:column;
@@ -890,11 +923,20 @@ body {
       </div><!-- /guide-content -->
         <!-- PANE 3: MEMORY WALL -->
         <div class="guide-pane" id="pane-3">
-          <div id="photoWallContent">
-            <div class="pw-empty">
-              <div class="pw-empty-icon">📸</div>
-              <div class="pw-empty-title">Memory Wall</div>
-              <div class="pw-empty-sub">Scan the QR on the left to add the first photo from your stay</div>
+          <div style="display:flex;align-items:flex-start;gap:28px;height:100%;">
+            <div style="flex:1;height:100%;" id="photoWallContent">
+              <div class="pw-empty">
+                <div class="pw-empty-icon">📸</div>
+                <div class="pw-empty-title">Memory Wall</div>
+                <div class="pw-empty-sub">Scan the QR to add the first photo from your stay</div>
+              </div>
+            </div>
+            <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:8px;">
+              <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(30,40,32,0.5);font-weight:600;">Add Your Photo</div>
+              <div style="background:white;border-radius:10px;padding:10px;box-shadow:0 2px 12px rgba(0,0,0,0.15);">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://clubos-photos-merryoceans.vercel.app&color=152E3E&bgcolor=FFFFFF" style="display:block;width:120px;height:120px;border-radius:4px;" alt="Photo QR">
+              </div>
+              <div style="font-size:11px;color:var(--text-mid);text-align:center;max-width:140px;line-height:1.4;">Scan to add your photo to the wall</div>
             </div>
           </div>
         </div>
@@ -988,17 +1030,25 @@ body {
 
   <!-- ═══════ FOOTER ═══════ -->
   <footer class="footer">
-    <div class="footer-sponsor">
-      <div class="sponsor-label">Local Sponsor</div>
-      <div class="sponsor-name">Shaka Taco 🌮</div>
-      <div class="sponsor-sub">Huck's personal favorite — highly recommended</div>
+    <div class="footer-leaderboard">
+      <div class="lb-strip-label">🏆 Weekend</div>
+      <div class="lb-strip-entries" id="lbStrip">
+        <div class="lb-strip-empty">No scores yet — play trivia, Hold'em, bingo, or upload a photo to earn points</div>
+      </div>
     </div>
-    <div class="footer-center">
-      Second row · Short walk to the beach · <span>Scan QR to Chat with Huck</span>
-    </div>
-    <div class="footer-brand">
-      Powered by <strong>ClubOS Home</strong><br>
-      <span style="color:rgba(255,255,255,0.18)">Clubhouse CTV LLC · Patent Pending</span>
+    <div class="footer-main">
+      <div class="footer-sponsor">
+        <div class="sponsor-label">Local Sponsor</div>
+        <div class="sponsor-name">Shaka Taco 🌮</div>
+        <div class="sponsor-sub">Huck's personal favorite — highly recommended</div>
+      </div>
+      <div class="footer-center">
+        Second row · Short walk to the beach · <span>Scan QR to Chat with Huck</span>
+      </div>
+      <div class="footer-brand">
+        Powered by <strong>ClubOS Home</strong><br>
+        <span style="color:rgba(255,255,255,0.18)">Clubhouse CTV LLC · Patent Pending</span>
+      </div>
     </div>
   </footer>
 
@@ -1131,6 +1181,44 @@ async function pollPhotos() {
 
 // Start photo polling
 pollPhotos();
+
+// ── LEADERBOARD STRIP ──
+let prevTopPlayer = '';
+
+async function pollLeaderboard() {
+  try {
+    const res = await fetch(
+      `${SUPA_URL}/rest/v1/merry_oceans_points?property_id=eq.merry-oceans&select=player_name,points`,
+      { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+    );
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) return;
+
+    // Aggregate
+    const totals = {};
+    rows.forEach(r => {
+      totals[r.player_name] = (totals[r.player_name] || 0) + r.points;
+    });
+    const sorted = Object.entries(totals).sort((a,b) => b[1]-a[1]).slice(0,3);
+    const newTop = sorted[0]?.[0] || '';
+    const isNewLeader = newTop && newTop !== prevTopPlayer && prevTopPlayer !== '';
+    prevTopPlayer = newTop;
+
+    const strip = document.getElementById('lbStrip');
+    const medals = ['🥇','🥈','🥉'];
+    strip.innerHTML = sorted.map(([ name, pts ], i) => `
+      <div class="lb-strip-entry">
+        <span class="lb-strip-rank">${medals[i]}</span>
+        <span class="lb-strip-name">${name}</span>
+        <span class="lb-strip-pts">${pts} pts</span>
+        ${i === 0 && isNewLeader ? '<span class="lb-strip-new">NEW LEADER</span>' : ''}
+      </div>
+    `).join('');
+  } catch(e) {}
+  setTimeout(pollLeaderboard, 8000);
+}
+
+pollLeaderboard();
 </script>
 </body>
 </html>
