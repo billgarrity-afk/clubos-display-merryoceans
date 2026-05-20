@@ -632,6 +632,25 @@ body {
 .huck-panel  { animation:fadeUp 0.7s ease 0.1s both; }
 .guide-panel { animation:fadeUp 0.7s ease 0.2s both; }
 .essentials-panel { animation:fadeUp 0.7s ease 0.3s both; }
+
+/* ── PHOTO WALL ── */
+.pw-layout { display:grid; grid-template-columns:1.15fr 1fr; gap:14px; height:calc(100% - 36px); overflow:hidden; }
+.pw-spotlight { position:relative; border-radius:12px; overflow:hidden; background:#0A1A12; box-shadow:0 4px 20px rgba(0,0,0,0.35); }
+.pw-spotlight img { width:100%; height:100%; object-fit:cover; display:block; }
+.pw-spotlight-overlay { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent, rgba(0,0,0,0.8)); padding:32px 18px 16px; }
+.pw-caption { font-size:15px; font-style:italic; color:rgba(255,255,255,0.85); line-height:1.4; margin-bottom:6px; }
+.pw-name { font-family:'Fraunces',serif; font-size:22px; color:var(--white); font-weight:600; }
+.pw-new-badge { position:absolute; top:12px; right:12px; background:var(--gold); color:var(--green-dark); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; padding:4px 10px; border-radius:4px; }
+.pw-grid { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr 1fr; gap:8px; overflow:hidden; }
+.pw-grid-item { position:relative; border-radius:8px; overflow:hidden; background:var(--ocean); }
+.pw-grid-item img { width:100%; height:100%; object-fit:cover; display:block; }
+.pw-grid-name { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent, rgba(0,0,0,0.65)); padding:14px 7px 5px; font-size:11px; font-weight:600; color:rgba(255,255,255,0.9); text-align:center; }
+.pw-empty { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
+.pw-empty-icon { font-size:52px; opacity:0.3; }
+.pw-empty-title { font-family:'Fraunces',serif; font-size:26px; color:var(--green-dark); font-weight:500; }
+.pw-empty-sub { font-size:14px; color:var(--text-mid); text-align:center; }
+.pw-count-badge { font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--gold-dim); font-weight:600; margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+.pw-count-badge::after { content:''; flex:1; height:1px; background:var(--separator); }
 </style>
 </head>
 <body>
@@ -710,6 +729,9 @@ body {
         </div>
         <div class="guide-tab" data-tab="2">
           <span class="guide-tab-icon">🌧</span>Rainy Day
+        </div>
+        <div class="guide-tab" data-tab="3">
+          <span class="guide-tab-icon">📸</span>Memory Wall
         </div>
       </div>
 
@@ -866,6 +888,16 @@ body {
         </div>
 
       </div><!-- /guide-content -->
+        <!-- PANE 3: MEMORY WALL -->
+        <div class="guide-pane" id="pane-3">
+          <div id="photoWallContent">
+            <div class="pw-empty">
+              <div class="pw-empty-icon">📸</div>
+              <div class="pw-empty-title">Memory Wall</div>
+              <div class="pw-empty-sub">Scan the QR on the left to add the first photo from your stay</div>
+            </div>
+          </div>
+        </div>
     </div><!-- /guide-panel -->
 
     <!-- ─── RIGHT: ESSENTIALS ─── -->
@@ -983,11 +1015,30 @@ function tick() {
 }
 tick(); setInterval(tick, 1000);
 
-// ── LOCAL GUIDE AUTO-CYCLE ──
+// ── SUPABASE CONFIG ──
+const SUPA_URL = 'https://ykfvwqewnfnibpzytspn.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrZnZ3cWV3bmZuaWJwenl0c3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE2NzYsImV4cCI6MjA5MDM5NzY3Nn0.cnMztZVHDV3Hof-26aRi4NIM7wKwjzxAfoMBR3oItms';
+
+// ── SMART TAB CYCLING ──
 const tabs = document.querySelectorAll('.guide-tab');
 const panes = document.querySelectorAll('.guide-pane');
 let currentTab = 0;
-const CYCLE_MS = 10000; // 10 seconds per tab
+let cycleTimer = null;
+let photos = [];
+let lastPhotoCount = 0;
+
+const PHOTO_TAB = 3;
+const BASE_MS = 10000;
+const PHOTO_BONUS_PER = 3000;
+const MAX_PHOTO_MS = 45000;
+const UPLOAD_SPOTLIGHT_MS = 30000;
+
+function getTabDuration(idx) {
+  if (idx === PHOTO_TAB && photos.length > 0) {
+    return Math.min(BASE_MS + photos.length * PHOTO_BONUS_PER, MAX_PHOTO_MS);
+  }
+  return BASE_MS;
+}
 
 function switchTab(idx) {
   tabs[currentTab].classList.remove('active');
@@ -995,6 +1046,14 @@ function switchTab(idx) {
   currentTab = idx;
   tabs[currentTab].classList.add('active');
   panes[currentTab].classList.add('active');
+  scheduleCycle();
+}
+
+function scheduleCycle() {
+  clearTimeout(cycleTimer);
+  cycleTimer = setTimeout(() => {
+    switchTab((currentTab + 1) % tabs.length);
+  }, getTabDuration(currentTab));
 }
 
 // Manual tab click
@@ -1002,10 +1061,76 @@ tabs.forEach((tab, i) => {
   tab.addEventListener('click', () => { switchTab(i); });
 });
 
-// Auto-cycle
-setInterval(() => {
-  switchTab((currentTab + 1) % tabs.length);
-}, CYCLE_MS);
+// Start cycling
+scheduleCycle();
+
+// ── PHOTO WALL ──
+function renderPhotoWall() {
+  const el = document.getElementById('photoWallContent');
+  if (!el) return;
+
+  if (!photos || photos.length === 0) {
+    el.innerHTML = `<div class="pw-empty">
+      <div class="pw-empty-icon">📸</div>
+      <div class="pw-empty-title">Memory Wall</div>
+      <div class="pw-empty-sub">Scan the QR on the left — be the first to add a photo from your stay</div>
+    </div>`;
+    return;
+  }
+
+  const newest = photos[0];
+  const grid = photos.slice(1, 7);
+  const spotUrl = `${SUPA_URL}/storage/v1/object/public/merry-oceans-photos/${newest.file_path}`;
+
+  el.innerHTML = `
+    <div class="pw-count-badge">${photos.length} photo${photos.length !== 1 ? 's' : ''} from this stay</div>
+    <div class="pw-layout">
+      <div class="pw-spotlight">
+        <img src="${spotUrl}" alt="${newest.guest_name}" onerror="this.style.opacity='0.3'">
+        <div class="pw-spotlight-overlay">
+          ${newest.caption ? `<div class="pw-caption">"${newest.caption}"</div>` : ''}
+          <div class="pw-name">— ${newest.guest_name}</div>
+        </div>
+        <div class="pw-new-badge">✦ Newest</div>
+      </div>
+      ${grid.length > 0 ? `<div class="pw-grid">${grid.map(p => {
+        const url = `${SUPA_URL}/storage/v1/object/public/merry-oceans-photos/${p.file_path}`;
+        return `<div class="pw-grid-item">
+          <img src="${url}" alt="${p.guest_name}" onerror="this.parentElement.style.background='#1A3A2A'">
+          <div class="pw-grid-name">${p.guest_name}</div>
+        </div>`;
+      }).join('')}</div>` : ''}
+    </div>`;
+}
+
+async function pollPhotos() {
+  try {
+    const res = await fetch(
+      `${SUPA_URL}/rest/v1/merry_oceans_photos?property_id=eq.merry-oceans&order=created_at.desc&limit=20`,
+      { headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY } }
+    );
+    const data = await res.json();
+    if (!Array.isArray(data)) return;
+
+    const newUpload = data.length > lastPhotoCount && lastPhotoCount > 0;
+    photos = data;
+    lastPhotoCount = data.length;
+    renderPhotoWall();
+
+    // New photo uploaded — jump to wall, give it spotlight time
+    if (newUpload) {
+      switchTab(PHOTO_TAB);
+      clearTimeout(cycleTimer);
+      cycleTimer = setTimeout(() => {
+        switchTab((currentTab + 1) % tabs.length);
+      }, UPLOAD_SPOTLIGHT_MS);
+    }
+  } catch(e) {}
+  setTimeout(pollPhotos, 5000);
+}
+
+// Start photo polling
+pollPhotos();
 </script>
 </body>
 </html>
