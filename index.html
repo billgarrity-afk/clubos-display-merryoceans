@@ -27,8 +27,8 @@
 body {
   font-family: 'DM Sans', sans-serif;
   background: var(--cream);
-  width: 1920px;
-  height: 1080px;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
   color: var(--text);
 }
@@ -37,8 +37,8 @@ body {
 .wrap {
   display: grid;
   grid-template-rows: 88px 1fr 64px;
-  height: 1080px;
-  width: 1920px;
+  height: 100vh;
+  width: 100vw;
 }
 
 /* ══════════════════════════════════════
@@ -668,16 +668,14 @@ body {
 /* ── PHOTO WALL ── */
 .pw-layout { display:grid; grid-template-columns:1.15fr 1fr; gap:14px; height:calc(100% - 36px); overflow:hidden; }
 .pw-spotlight { position:relative; border-radius:12px; overflow:hidden; background:#0A1A12; box-shadow:0 4px 20px rgba(0,0,0,0.35); }
-.pw-spotlight-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:blur(28px) brightness(0.55) saturate(1.1); transform:scale(1.15); display:block; }
-.pw-spotlight-main { position:relative; width:100%; height:100%; object-fit:contain; display:block; z-index:1; }
+.pw-spotlight img { width:100%; height:100%; object-fit:cover; display:block; }
 .pw-spotlight-overlay { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent, rgba(0,0,0,0.8)); padding:32px 18px 16px; }
 .pw-caption { font-size:15px; font-style:italic; color:rgba(255,255,255,0.85); line-height:1.4; margin-bottom:6px; }
 .pw-name { font-family:'Fraunces',serif; font-size:22px; color:var(--white); font-weight:600; }
 .pw-new-badge { position:absolute; top:12px; right:12px; background:var(--gold); color:var(--green-dark); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; padding:4px 10px; border-radius:4px; }
 .pw-grid { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr 1fr; gap:8px; overflow:hidden; }
 .pw-grid-item { position:relative; border-radius:8px; overflow:hidden; background:var(--ocean); }
-.pw-grid-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:blur(14px) brightness(0.5) saturate(1.1); transform:scale(1.15); display:block; }
-.pw-grid-main { position:relative; width:100%; height:100%; object-fit:contain; display:block; z-index:1; }
+.pw-grid-item img { width:100%; height:100%; object-fit:cover; display:block; }
 .pw-grid-name { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent, rgba(0,0,0,0.65)); padding:14px 7px 5px; font-size:11px; font-weight:600; color:rgba(255,255,255,0.9); text-align:center; }
 .pw-empty { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
 .pw-empty-icon { font-size:52px; opacity:0.3; }
@@ -1184,21 +1182,19 @@ function renderPhotoWall() {
     <div class="pw-count-badge">${photos.length} photo${photos.length !== 1 ? 's' : ''} from this stay</div>
     <div class="pw-layout">
       <div class="pw-spotlight">
-        <img class="pw-spotlight-bg" src="${spotUrl}" alt="" aria-hidden="true">
-        <img class="pw-spotlight-main" src="${spotUrl}" alt="${newest.guest_name}" onerror="this.style.opacity='0.3'">
-        <div class="pw-spotlight-overlay" style="z-index:2;">
+        <img src="${spotUrl}" alt="${newest.guest_name}" onerror="this.style.opacity='0.3'">
+        <div class="pw-spotlight-overlay">
           ${newest.caption ? `<div class="pw-caption">"${newest.caption}"</div>` : ''}
           <div class="pw-name">— ${newest.guest_name}</div>
         </div>
-        <div class="pw-new-badge" style="z-index:2;">✦ Newest</div>
+        <div class="pw-new-badge">✦ Newest</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;overflow:hidden;">
         ${grid.length > 0 ? `<div class="pw-grid" style="flex:1;">${grid.map(p => {
           const url = `${SUPA_URL}/storage/v1/object/public/merry-oceans-photos/${p.file_path}`;
           return `<div class="pw-grid-item">
-            <img class="pw-grid-bg" src="${url}" alt="" aria-hidden="true">
-            <img class="pw-grid-main" src="${url}" alt="${p.guest_name}" onerror="this.parentElement.style.background='#1A3A2A'">
-            <div class="pw-grid-name" style="z-index:2;">${p.guest_name}</div>
+            <img src="${url}" alt="${p.guest_name}" onerror="this.parentElement.style.background='#1A3A2A'">
+            <div class="pw-grid-name">${p.guest_name}</div>
           </div>`;
         }).join('')}</div>` : ''}
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;padding:8px 0;">
