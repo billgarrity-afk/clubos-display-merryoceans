@@ -1165,7 +1165,11 @@ function renderPhotoWall() {
     el.innerHTML = `<div class="pw-empty">
       <div class="pw-empty-icon">📸</div>
       <div class="pw-empty-title">Memory Wall</div>
-      <div class="pw-empty-sub">Scan the QR on the left — be the first to add a photo from your stay</div>
+      <div class="pw-empty-sub">Scan below — be the first to add a photo from your stay</div>
+      <div style="background:white;border-radius:10px;padding:10px;box-shadow:0 2px 12px rgba(0,0,0,0.12);margin-top:4px;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=https://clubos-photos-merryoceans.vercel.app&color=1A3A2A&bgcolor=FFFFFF" style="display:block;width:110px;height:110px;border-radius:3px;" alt="Photo QR">
+      </div>
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-mid);">Scan to Add a Photo</div>
     </div>`;
     return;
   }
