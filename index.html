@@ -28,7 +28,7 @@ body {
   font-family: 'DM Sans', sans-serif;
   background: var(--cream);
   width: 1920px;
-  height: 100vh;
+  height: 1080px;
   overflow: hidden;
   color: var(--text);
 }
@@ -37,7 +37,7 @@ body {
 .wrap {
   display: grid;
   grid-template-rows: 88px 1fr 64px;
-  height: 100vh;
+  height: 1080px;
   width: 1920px;
 }
 
@@ -1106,6 +1106,23 @@ function tick() {
   document.getElementById('clockDate').textContent = d;
 }
 tick(); setInterval(tick, 1000);
+
+// ── AUTO-SCALE TO VIEWPORT ──
+function scaleToFit() {
+  const scaleX = window.innerWidth / 1920;
+  const scaleY = window.innerHeight / 1080;
+  const scale = Math.min(scaleX, scaleY);
+  const wrap = document.querySelector('.wrap');
+  if (wrap) {
+    wrap.style.transform = `scale(${scale})`;
+    wrap.style.transformOrigin = 'top left';
+    document.body.style.width = '100vw';
+    document.body.style.height = '100vh';
+    document.body.style.overflow = 'hidden';
+  }
+}
+scaleToFit();
+window.addEventListener('resize', scaleToFit);
 
 // ── SUPABASE CONFIG ──
 const SUPA_URL = 'https://ykfvwqewnfnibpzytspn.supabase.co';
